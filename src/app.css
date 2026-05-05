@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+@import 'dialkit/styles.css';
+
+/*
+ * Vibes — global styles
+ *
+ * Dark, atmospheric, minimal chrome. The page is intentionally black so the
+ * looping background video reads as the primary surface; UI floats on top.
+ */
+:root {
+	color-scheme: dark;
+	--vibes-bg: #000;
+	--vibes-fg: oklch(0.95 0 0);
+	--vibes-muted: oklch(0.65 0 0);
+}
+
+html,
+body {
+	background: var(--vibes-bg);
+	color: var(--vibes-fg);
+	height: 100%;
+	overscroll-behavior: none;
+}
+
+body {
+	margin: 0;
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		'Helvetica Neue',
+		Arial,
+		sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* Honour reduced-motion globally. Components may opt out where needed. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
