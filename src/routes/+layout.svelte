@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { DialRoot } from 'dialkit/svelte';
 	import { AudioEngine } from '$lib/audio/engine.svelte';
 	import { setEngine } from '$lib/audio/context';
 
@@ -20,3 +21,9 @@
 </svelte:head>
 
 {@render children()}
+
+<!--
+  DialKit's floating panel. `productionEnabled` is required because by default
+  DialKit hides itself in production builds — for us, it IS the user-facing UI.
+-->
+<DialRoot position="bottom-right" theme="dark" productionEnabled defaultOpen={false} />

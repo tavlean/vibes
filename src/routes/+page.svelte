@@ -1,5 +1,6 @@
 <script lang="ts">
 	import VideoBackground from '$lib/components/VideoBackground.svelte';
+	import Controls from '$lib/components/Controls.svelte';
 	import { getEngine } from '$lib/audio/context';
 
 	const engine = getEngine();
@@ -8,7 +9,6 @@
 <VideoBackground scene={engine.currentScene} />
 
 <main class="page">
-	<!-- Controls panel (DialKit) is mounted globally in Phase 5. -->
 	{#if !engine.isReady}
 		<button
 			class="start"
@@ -21,6 +21,10 @@
 		</button>
 	{/if}
 </main>
+
+<!-- Controls is invisible: it only declares DialKit values and bridges them
+     to the engine. The actual UI lives in <DialRoot /> (mounted in layout). -->
+<Controls />
 
 <style>
 	.page {
