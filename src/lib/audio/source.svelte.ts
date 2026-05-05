@@ -1,0 +1,130 @@
+/**
+ * Vibes — AudioSource
+ *
+ * One source per playable thing: a music track or an ambient layer. Wraps an
+ * `<audio>` element + `MediaElementAudioSourceNode` + `GainNode`. The HTML
+ * element does the streaming/buffering (no need to decode into AudioBuffer for
+ * long files), the GainNode gives us click-free volume control, and the audio
+ * element survives in memory so we can pause/resume/seek cheaply.
+ *
+ * `volume` and `isPlaying` are reactive `$state` — components can drive them
+ * directly via DialKit.
+ */
+
+const FADE_SECONDS = 0.05; // ~50ms ramp, just enough to avoid clicks
+
+export interface AudioSourceOptions {
+	url: string;
+	loop?: boolean;
+	/** Initial volume in [0,1]. Default 0 — explicitly fade in to play. */
+	initialVolume?: number;
+	/** Crossorigin attribute, useful when loading from R2 with CORS. */
+	crossOrigin?: 'anonymous' | 'use-credentials' | null;
+}
+
+export class AudioSource {
+	#element: HTMLAudioElement;
+	#sourceNode: MediaElementAudioSourceNode;
+	#gain: GainNode;
+	#ctx: AudioContext;
+	#destroyed = false;
+
+	/** User-facing volume in [0,1]. Mirrored to the gain node via setVolume. */
+	volume = $state(0);
+	isPlaying = $state(false);
+	isLoaded = $state(false);
+
+	constructor(ctx: AudioContext, destination: AudioNode, options: AudioSourceOptions) {
+		this.#ctx = ctx;
+
+		const el = new Audio();
+		el.src = options.url;
+		el.loop = options.loop ?? false;
+		el.preload = 'auto';
+		el.crossOrigin = options.crossOrigin ?? 'anonymous';
+		// Don't auto-play; require explicit play() (browser policies + UX).
+		this.#element = el;
+
+		this.#sourceNode = ctx.createMediaElementSource(el);
+		this.#gain = ctx.createGain();
+		this.#gain.gain.value = 0;
+		this.#sourceNode.connect(this.#gain).connect(destination);
+
+		const initial = options.initialVolume ?? 0;
+		this.volume = initial;
+		this.#gain.gain.value = initial;
+
+		el.addEventListener('canplaythrough', () => {
+			this.isLoaded = true;
+		});
+		el.addEventListener('play', () => {
+			this.isPlaying = true;
+		});
+		el.addEventListener('pause', () => {
+			this.isPlaying = false;
+		});
+		el.addEventListener('ended', () => {
+			if (!el.loop) this.isPlaying = false;
+		});
+	}
+
+	/** Smooth-ramp the gain to a target value to avoid clicks. */
+	setVolume(value: number): void {
+		const v = clamp(value, 0, 1);
+		this.volume = v;
+		const now = this.#ctx.currentTime;
+		const g = this.#gain.gain;
+		g.cancelScheduledValues(now);
+		g.setValueAtTime(g.value, now);
+		g.linearRampToValueAtTime(v, now + FADE_SECONDS);
+	}
+
+	async play(): Promise<void> {
+		if (this.#destroyed) return;
+		try {
+			await this.#element.play();
+		} catch {
+			// Autoplay blocked — caller should retry from a user gesture.
+		}
+	}
+
+	pause(): void {
+		if (this.#destroyed) return;
+		this.#element.pause();
+	}
+
+	/** Stop playback and rewind to start (used when switching tracks). */
+	stop(): void {
+		if (this.#destroyed) return;
+		this.#element.pause();
+		try {
+			this.#element.currentTime = 0;
+		} catch {
+			// Some browsers throw if metadata isn't ready yet — safe to ignore.
+		}
+	}
+
+	/** Replace the underlying source URL (used when switching tracks). */
+	setUrl(url: string): void {
+		if (this.#destroyed) return;
+		this.#element.src = url;
+		this.#element.load();
+		this.isLoaded = false;
+	}
+
+	destroy(): void {
+		this.#destroyed = true;
+		this.#element.pause();
+		this.#element.src = '';
+		try {
+			this.#sourceNode.disconnect();
+			this.#gain.disconnect();
+		} catch {
+			// disconnect throws if already disconnected
+		}
+	}
+}
+
+function clamp(n: number, min: number, max: number): number {
+	return n < min ? min : n > max ? max : n;
+}
