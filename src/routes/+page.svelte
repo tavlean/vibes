@@ -4,7 +4,24 @@
 	import { getEngine } from '$lib/audio/context';
 
 	const engine = getEngine();
+
+	function onkeydown(event: KeyboardEvent) {
+		// Ignore shortcuts while typing into a form/contenteditable (e.g.
+		// DialKit's text-edit slider input or its preset name field).
+		const target = event.target as HTMLElement | null;
+		const tag = target?.tagName;
+		const typing =
+			tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable === true;
+		if (typing) return;
+
+		if (event.code === 'Space') {
+			event.preventDefault();
+			void engine.toggle();
+		}
+	}
 </script>
+
+<svelte:window {onkeydown} />
 
 <VideoBackground scene={engine.currentScene} />
 
@@ -50,11 +67,15 @@
 		letter-spacing: 0.02em;
 		cursor: pointer;
 		transition: background 200ms ease;
+		animation: fade-in 600ms ease-out both;
 	}
 	.start:hover,
 	.start:focus-visible {
 		background: rgba(0, 0, 0, 0.65);
 		outline: none;
+	}
+	.start:focus-visible {
+		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
 	}
 	.start-dot {
 		width: 0.5rem;
@@ -62,5 +83,15 @@
 		border-radius: 999px;
 		background: oklch(0.85 0.15 150);
 		box-shadow: 0 0 12px oklch(0.85 0.15 150 / 0.6);
+	}
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 </style>
