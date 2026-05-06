@@ -117,8 +117,9 @@
 		background: rgba(255, 255, 255, 0.07);
 		border-color: rgba(255, 255, 255, 0.14);
 	}
-	/* Progress fill — own element so we can transition `width`. CSS gradients
-	   can't be smoothly transitioned, hence not using a gradient stop. */
+	/* Progress fill — width is driven by RAF in the audio source (60 fps),
+	   so no CSS transition is needed; adding one would lag visible progress
+	   behind actual playback. */
 	.fill {
 		position: absolute;
 		left: 0;
@@ -127,7 +128,6 @@
 		width: 0;
 		background: rgba(255, 255, 255, 0.08);
 		z-index: 0;
-		transition: width 120ms linear;
 		pointer-events: none;
 	}
 	.title,

@@ -175,7 +175,10 @@ export class AudioEngine {
 			url: mediaUrl(track.src),
 			loop: false,
 			initialVolume: 1,
-			onEnded: () => this.#advanceToNext()
+			onEnded: () => this.#advanceToNext(),
+			// Drive the progress fill at the display refresh rate so the
+			// elapsed-time bar in TrackList moves smoothly.
+			smoothProgress: true
 		});
 	}
 

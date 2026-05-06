@@ -22,6 +22,13 @@ export interface AudioSourceOptions {
 	crossOrigin?: 'anonymous' | 'use-credentials' | null;
 	/** Fires after the element's `ended` event (i.e. natural finish). */
 	onEnded?: () => void;
+	/**
+	 * Update `currentTime` every animation frame while playing, instead of
+	 * waiting for the media element's `timeupdate` (which only fires every
+	 * ~250 ms). Use for music sources whose progress is shown to the user.
+	 * Ambient layers don't need this — their currentTime isn't displayed.
+	 */
+	smoothProgress?: boolean;
 }
 
 export class AudioSource {
@@ -30,6 +37,8 @@ export class AudioSource {
 	#gain: GainNode;
 	#ctx: AudioContext;
 	#destroyed = false;
+	#smoothProgress = false;
+	#rafId: number | undefined;
 
 	/** User-facing volume in [0,1]. Mirrored to the gain node via setVolume. */
 	volume = $state(0);
@@ -59,20 +68,26 @@ export class AudioSource {
 		const initial = options.initialVolume ?? 0;
 		this.volume = initial;
 		this.#gain.gain.value = initial;
+		this.#smoothProgress = options.smoothProgress ?? false;
 
 		el.addEventListener('canplaythrough', () => {
 			this.isLoaded = true;
 		});
 		el.addEventListener('play', () => {
 			this.isPlaying = true;
+			this.#startProgressLoop();
 		});
 		el.addEventListener('pause', () => {
 			this.isPlaying = false;
+			this.#stopProgressLoop();
 		});
 		el.addEventListener('ended', () => {
 			if (!el.loop) this.isPlaying = false;
+			this.#stopProgressLoop();
 			options.onEnded?.();
 		});
+		// Fallback for the case where the browser doesn't fire `play` (rare,
+		// e.g. on some autoplay paths) — `timeupdate` keeps state correct.
 		el.addEventListener('timeupdate', () => {
 			this.currentTime = el.currentTime;
 		});
@@ -81,6 +96,24 @@ export class AudioSource {
 		};
 		el.addEventListener('loadedmetadata', updateDuration);
 		el.addEventListener('durationchange', updateDuration);
+	}
+
+	#progressTick = () => {
+		this.currentTime = this.#element.currentTime;
+		this.#rafId = requestAnimationFrame(this.#progressTick);
+	};
+
+	#startProgressLoop(): void {
+		if (!this.#smoothProgress) return;
+		if (this.#rafId !== undefined) return;
+		this.#progressTick();
+	}
+
+	#stopProgressLoop(): void {
+		if (this.#rafId !== undefined) {
+			cancelAnimationFrame(this.#rafId);
+			this.#rafId = undefined;
+		}
 	}
 
 	/**
@@ -139,6 +172,7 @@ export class AudioSource {
 
 	destroy(): void {
 		this.#destroyed = true;
+		this.#stopProgressLoop();
 		this.#element.pause();
 		this.#element.src = '';
 		try {
