@@ -171,7 +171,7 @@
 	   on hover/focus/drag. */
 	.ticks {
 		position: absolute;
-		inset: 11px 0;
+		inset: 14px 0;
 		z-index: 1;
 		pointer-events: none;
 		opacity: 0;
@@ -187,20 +187,22 @@
 	.row:hover .ticks,
 	.row:focus-visible .ticks,
 	.row.dragging .ticks {
-		opacity: 1;
+		opacity: 0.7;
 	}
 
 	/* Vertical thumb line at the current value. Hidden at rest; fades in
-	   on hover/focus/drag — same affordance pattern as the ticks. Position
-	   math keeps the thumb fully inside the row at both extremes (left
-	   edge at value=0, right edge at value=1). */
+	   on hover/focus/drag — same affordance pattern as the ticks.
+	   Positioned a few pixels inside the fill's right edge so the fill
+	   visibly extends past the thumb, rather than the thumb sitting on
+	   the boundary. The `max(2px, …)` keeps the thumb fully on-screen at
+	   the left edge when the value is at (or near) zero. */
 	.thumb {
 		position: absolute;
-		top: 5px;
-		bottom: 5px;
-		left: calc(1.5px + var(--fill, 0) * (100% - 3px));
+		top: 8px;
+		bottom: 8px;
+		left: max(2px, calc(var(--fill, 0) * 100% - 6px));
 		transform: translateX(-50%);
-		width: 3px;
+		width: 4px;
 		border-radius: 2px;
 		background: rgba(255, 255, 255, 0.85);
 		z-index: 2;
