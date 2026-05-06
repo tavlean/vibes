@@ -15,6 +15,8 @@
 	 * The selectors in this app (Scene, Tracks) are NOT sliders — they're
 	 * separate components and don't get any of this affordance.
 	 */
+	import type { Snippet } from 'svelte';
+
 	interface Props {
 		label: string;
 		value: number;
@@ -25,6 +27,8 @@
 		onChange: (v: number) => void;
 		/** Right-side display formatter. Defaults to a 0–100% percentage. */
 		valueFormat?: (v: number, min: number, max: number) => string;
+		/** Optional leading icon (rendered before the label). */
+		icon?: Snippet;
 	}
 
 	function defaultFormat(v: number, mn: number, mx: number): string {
@@ -40,7 +44,8 @@
 		max = 1,
 		step = 0.01,
 		onChange,
-		valueFormat = defaultFormat
+		valueFormat = defaultFormat,
+		icon
 	}: Props = $props();
 
 	let trackEl: HTMLDivElement | undefined = $state();
@@ -114,6 +119,9 @@
 	<span class="fill" aria-hidden="true"></span>
 	<span class="ticks" aria-hidden="true"></span>
 	<span class="thumb" aria-hidden="true"></span>
+	{#if icon}
+		<span class="icon" aria-hidden="true">{@render icon()}</span>
+	{/if}
 	<span class="label">{label}</span>
 	<span class="value">{valueFormat(value, min, max)}</span>
 </div>
@@ -157,6 +165,8 @@
 		bottom: 0;
 		width: calc(var(--fill, 0) * 100%);
 		background: rgba(255, 255, 255, 0.08);
+		border-top-right-radius: 8px;
+		border-bottom-right-radius: 8px;
 		z-index: 0;
 		pointer-events: none;
 		transition: width 150ms cubic-bezier(0.2, 0, 0, 1);
@@ -221,10 +231,21 @@
 		transition: opacity 180ms ease;
 	}
 
+	.icon,
 	.label,
 	.value {
 		position: relative;
 		z-index: 3;
+	}
+	.icon {
+		display: inline-flex;
+		align-items: center;
+		flex-shrink: 0;
+		opacity: 0.7;
+		/* Pull the label closer to the icon — the row's gap (0.75rem) is
+		   right between label and value, but feels too generous between
+		   an icon and its label. */
+		margin-right: calc(-0.75rem + 0.5rem);
 	}
 	.label {
 		flex: 1;

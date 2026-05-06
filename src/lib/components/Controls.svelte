@@ -17,6 +17,7 @@
 	import { ambientLayers, scenes } from '$lib/catalog';
 	import { getEngine } from '$lib/audio/context';
 	import SliderRow from './SliderRow.svelte';
+	import AmbientIcon from './AmbientIcon.svelte';
 	import TrackList from './TrackList.svelte';
 
 	const engine = getEngine();
@@ -73,7 +74,11 @@
 						label={layer.title}
 						value={engine.ambientVolumes[layer.id]}
 						onChange={(v) => engine.setAmbientVolume(layer.id, v)}
-					/>
+					>
+						{#snippet icon()}
+							<AmbientIcon name={layer.id} />
+						{/snippet}
+					</SliderRow>
 				</li>
 			{/each}
 		</ul>
