@@ -13,6 +13,7 @@
 	 * single column of consistent controls.
 	 */
 	import { ambientLayers, scenes } from '$lib/catalog';
+	import { SHOW_SCENES } from '$lib/config';
 	import { getEngine } from '$lib/audio/context';
 	import SliderRow from './SliderRow.svelte';
 	import AmbientIcon from './AmbientIcon.svelte';
@@ -58,30 +59,33 @@
 		</button>
 	</section>
 
-	<section class="flex flex-col gap-1" aria-label="Scene">
-		<h3 class={headingClass}>Scene</h3>
-		<ul class={listClass}>
-			{#each scenes as scene (scene.id)}
-				{@const isCurrent = scene.id === engine.currentSceneId}
-				<li>
-					<button
-						type="button"
-						class={[rowBase, rowInteractive, isCurrent && rowCurrent]}
-						onclick={() => engine.setScene(scene.id)}
-						aria-pressed={isCurrent}
-					>
-						<span class="flex-1 truncate">{scene.title}</span>
-						{#if isCurrent}
-							<span
-								class="size-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent-glow)]"
-								aria-hidden="true"
-							></span>
-						{/if}
-					</button>
-				</li>
-			{/each}
-		</ul>
-	</section>
+	<!-- Scene picker — hidden behind SHOW_SCENES. See docs/scenes.md. -->
+	{#if SHOW_SCENES}
+		<section class="flex flex-col gap-1" aria-label="Scene">
+			<h3 class={headingClass}>Scene</h3>
+			<ul class={listClass}>
+				{#each scenes as scene (scene.id)}
+					{@const isCurrent = scene.id === engine.currentSceneId}
+					<li>
+						<button
+							type="button"
+							class={[rowBase, rowInteractive, isCurrent && rowCurrent]}
+							onclick={() => engine.setScene(scene.id)}
+							aria-pressed={isCurrent}
+						>
+							<span class="flex-1 truncate">{scene.title}</span>
+							{#if isCurrent}
+								<span
+									class="size-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent-glow)]"
+									aria-hidden="true"
+								></span>
+							{/if}
+						</button>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
 
 	<section class="flex flex-col gap-1" aria-label="Ambient">
 		<h3 class={headingClass}>Ambient</h3>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import VideoBackground from '$lib/components/VideoBackground.svelte';
 	import Controls from '$lib/components/Controls.svelte';
+	import { SHOW_SCENES } from '$lib/config';
 	import { getEngine } from '$lib/audio/context';
 
 	const engine = getEngine();
@@ -24,7 +25,10 @@
 
 <svelte:window {onkeydown} />
 
-<VideoBackground scene={engine.currentScene} />
+<!-- Scene-driven video background — hidden behind SHOW_SCENES. See docs/scenes.md. -->
+{#if SHOW_SCENES}
+	<VideoBackground scene={engine.currentScene} />
+{/if}
 
 <!-- The first user interaction with any control (Play action in the panel,
      a track button, an ambient slider) unlocks the AudioContext via the

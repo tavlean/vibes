@@ -17,6 +17,7 @@ first** — they cover the non-obvious project-specific stuff.
 
 - [architecture.md](./architecture.md) — Audio engine, state, control panel
 - [media-and-deploy.md](./media-and-deploy.md) — Media URL layer, static build, R2 path
+- [scenes.md](./scenes.md) — Scene picker is hidden; how to bring it back
 
 ## Sibling: `creator-docs/`
 
