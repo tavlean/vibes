@@ -1,6 +1,6 @@
 # Architecture
 
-One page: full-bleed looping video, DialKit floating panel, six ambient
+One page: full-bleed looping video, a fixed-right control panel, six ambient
 layers + one music track mixed via Web Audio.
 
 ## Audio graph
@@ -33,20 +33,35 @@ module. Plain `.ts` will error.
 ## AudioContext lifecycle
 
 Browsers block AudioContext until a user gesture. `engine.ensureRunning()`
-lazily constructs the context + all sources on first call. The "tap to begin"
-button on the page is the unlock; after that, every subsequent control
-interaction works.
+lazily constructs the context + all sources on first call. There's no
+explicit unlock affordance — `play()`, `setTrack()`, and any user-driven
+setter route through `ensureRunning` so the first interaction with any
+control unlocks audio.
 
-`isReady` flips true once the context exists — used by the page to hide the
-unlock button.
+If a user adjusts an ambient slider above zero before the context exists,
+the engine remembers the volume; once the context comes up, that layer
+auto-starts at the stored volume.
+
+## Control panel
+
+`src/lib/components/Controls.svelte` is the panel. Custom Svelte components,
+no external UI library:
+
+- `SliderRow.svelte` — pointer-capture-driven slider used for master volume
+  and each ambient layer.
+- Inline `<button>` rows for Play/Pause and the scene picker.
+- `TrackList.svelte` — passive elapsed-time display per track, click-to-
+  select / click-to-toggle.
+
+UI components write to engine state through the engine's setters
+(`setMasterVolume`, `setAmbientVolume`, `setScene`, `setTrack`, `toggle`).
+They read from `$state` fields directly (`engine.masterVolume`,
+`engine.ambientVolumes[id]`, `engine.currentTrackId`, `engine.music`).
 
 ## Reactivity rules in this codebase
 
 - `$state` for engine fields and source state (volume, isPlaying, etc.).
-- `$derived` only where there's a pure computation (none in current code; the
-  catalog lookups in `engine.currentTrack` / `currentScene` are getters).
-- `$effect` is reserved for syncing reactive state into Web Audio nodes — the
-  canonical "external system" use case. The `$effect`s in `Controls.svelte`
-  read DialKit values and write engine setters; they don't form a cycle
-  because each effect reads one source-of-truth and writes a different one.
+- `$derived` for pure computations — e.g. SliderRow's fill percentage.
+- `$effect` is the escape hatch for external-system syncs (Web Audio gain
+  ramps live inside the engine setters; not in components).
 - No stores. No `setContext`/`getContext` with string keys.

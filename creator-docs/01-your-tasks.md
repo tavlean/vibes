@@ -22,14 +22,14 @@ npm run dev
 Then visit <http://localhost:5173> in your browser. You'll see:
 
 - A dark page (it's a flat-color "video" right now)
-- A small **tap to begin** pill in the centre — click it once. This is required
-  by browser policy: audio can't start until you make any user gesture.
-- A small floating control bubble in the bottom-right corner — that's
-  **DialKit**. Click it to expand the panel.
+- The control panel on the right side, vertically centred. From top to
+  bottom: **Master** volume, **Play / Pause**, **Scene** picker, six
+  **Ambient** layer sliders (Rain, Thunder, Traffic, Café, Fireplace,
+  Vinyl), and a **Tracks** list.
 
-In the panel you'll see a **Master** slider, **Track** dropdown, **Play/Pause**
-button, **Scene** dropdown, and an **Ambient** folder with six volume sliders
-(Rain, Thunder, Traffic, Café, Fireplace, Vinyl).
+Click any control to start. The first interaction unlocks audio — there's
+no separate "tap to begin" affordance. Try clicking Play, then a track,
+then drag an ambient slider above zero to layer in some rain.
 
 It all works — moving the master slider attenuates everything, the ambient
 sliders fade layers in and out, etc. It's just silent because the placeholder
@@ -206,15 +206,10 @@ run when you have time.
 
 ## Notes & gotchas
 
-- **Browser autoplay policy.** The first interaction (clicking "tap to begin"
-  or any DialKit control) unlocks audio. After that, everything Just Works for
-  the rest of the session. This is a browser rule, not something we can skip.
-- **DialKit panel position.** It lives bottom-right by default. You can drag
-  the closed bubble to a different corner — it remembers.
-- **Saving "vibes" / presets.** DialKit has a built-in preset manager (the
-  little version dropdown in the panel toolbar). You can save your current
-  state as a "Version", switch between them, and copy the JSON to your
-  clipboard. We'll wire this to a "share-a-vibe" URL in v2.
+- **Browser autoplay policy.** The first interaction with any control
+  unlocks audio (clicking Play, a track, dragging a slider — all count).
+  After that, everything Just Works for the session. This is a browser
+  rule, not something we can skip.
 - **Build to test the production version locally.** Run `npm run build` and
   then `npm run preview`. The output is a folder of plain static files in
   `build/`.

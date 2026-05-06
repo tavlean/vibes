@@ -6,8 +6,9 @@
 	const engine = getEngine();
 
 	function onkeydown(event: KeyboardEvent) {
-		// Ignore shortcuts while typing into a form/contenteditable (e.g.
-		// DialKit's inline text-edit slider input).
+		// Ignore shortcuts while typing into a form/contenteditable (we don't
+		// have any such inputs today, but this keeps Space-to-toggle from
+		// hijacking text entry if one is ever added).
 		const target = event.target as HTMLElement | null;
 		const tag = target?.tagName;
 		const typing =

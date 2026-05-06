@@ -1,20 +1,16 @@
 <script lang="ts">
 	/**
-	 * Track list — a custom replacement for what would otherwise be a folder
-	 * of DialKit sliders.
+	 * Track list — list of tracks as click-to-toggle buttons with a passive
+	 * elapsed-time display.
 	 *
-	 * Why custom? DialKit's slider type is always interactive (drag, click-to-
-	 * snap, hover-to-edit numeric value). The user wants tracks rendered as
-	 * buttons that show passive elapsed time (formatted as M:SS) and a thin
-	 * progress fill — none of those slider affordances. There's no built-in
-	 * read-only display control in DialKit, so we render our own row that
-	 * matches the panel's visual language.
-	 *
-	 * Behaviour:
-	 *   - Click any track → if it's the active track, toggle play/pause; else
-	 *     switch to it (the engine plays it after select).
-	 *   - The active track shows ticking elapsed time + a horizontal fill.
+	 *   - Click any track → if it's the active track, toggle play/pause;
+	 *     else switch to it (the engine plays it after select).
+	 *   - The active track shows ticking elapsed time (M:SS) + a horizontal
+	 *     fill driven by `engine.music.currentTime / .duration`.
 	 *   - Inactive tracks sit at 0:00 with no fill.
+	 *
+	 * Tracks aren't manually scrubbable — the user explicitly wanted a
+	 * passive display, not a draggable slider.
 	 */
 	import { tracks } from '$lib/catalog';
 	import { getEngine } from '$lib/audio/context';

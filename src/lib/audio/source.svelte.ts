@@ -7,8 +7,8 @@
  * long files), the GainNode gives us click-free volume control, and the audio
  * element survives in memory so we can pause/resume/seek cheaply.
  *
- * `volume` and `isPlaying` are reactive `$state` — components can drive them
- * directly via DialKit.
+ * `volume` and `isPlaying` are reactive `$state` — components read/write them
+ * via the engine's setters (e.g. `setMasterVolume`, `setAmbientVolume`).
  */
 
 const FADE_SECONDS = 0.05; // ~50ms ramp, just enough to avoid clicks

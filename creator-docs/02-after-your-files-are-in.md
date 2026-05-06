@@ -147,9 +147,9 @@ headers.
 
 Worth picking up next, in roughly this order:
 
-1. **"Share a vibe" URLs** — encode the current DialKit preset (master volume,
+1. **"Share a vibe" URLs** — encode the current panel state (master volume,
    track, scene, ambient mix) into the URL hash so a link reproduces a mood.
-   Hooks into DialKit's existing preset system.
+   Plus a small "save preset" UI on the panel.
 2. **Audio visualizer** — a subtle waveform/peak meter overlay using the Web
    Audio `AnalyserNode`. Already have the audio graph; just need a canvas
    layer.

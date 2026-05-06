@@ -3,8 +3,8 @@
  *
  * One AudioContext per page. Owns master gain, the music track source, and a
  * map of ambient sources (one per layer). All reactive state lives here as
- * `$state` class fields — components mutate it directly (often via DialKit
- * sliders) and the engine reflects it onto Web Audio nodes.
+ * `$state` class fields — UI components call the setters and the engine
+ * reflects the change onto Web Audio nodes.
  *
  * Browsers require a user gesture before AudioContext can produce sound, so
  * the AudioContext is constructed lazily inside `ensureRunning()`, which

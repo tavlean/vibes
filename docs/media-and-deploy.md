@@ -14,13 +14,13 @@ Don't bypass this helper.
 ## Catalog is the editing surface
 
 `src/lib/catalog.ts` is the only file you edit to add/rename tracks, ambient
-layers, or scenes. The DialKit panel and audio engine read from it
-declaratively — no other wiring needed.
+layers, or scenes. The control panel reads from it declaratively — adding a
+new track or scene is one entry in the array.
 
 If you add a 7th ambient layer, you must also:
 1. Add the id to the `AmbientLayerId` union in `src/lib/types.ts`.
-2. Add a slider for it in the `ambient` folder of `Controls.svelte`.
-3. Add a default in `defaults.ambientVolumes` (still in catalog.ts).
+2. Add a default in `defaults.ambientVolumes` (still in catalog.ts).
+The Controls panel iterates `ambientLayers` directly, so no extra UI wiring.
 
 ## Adapter
 

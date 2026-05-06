@@ -15,8 +15,7 @@ first** — they cover the non-obvious project-specific stuff.
 
 ## Index
 
-- [architecture.md](./architecture.md) — Audio engine shape, state, lifecycle
-- [dialkit.md](./dialkit.md) — DialKit usage; required postinstall patch
+- [architecture.md](./architecture.md) — Audio engine, state, control panel
 - [media-and-deploy.md](./media-and-deploy.md) — Media URL layer, static build, R2 path
 
 ## Sibling: `creator-docs/`

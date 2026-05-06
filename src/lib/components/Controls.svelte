@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * The control panel — fully custom, no DialKit.
+	 * The control panel.
 	 *
 	 * Layout (top → bottom):
 	 *   1. Master volume (slider)
