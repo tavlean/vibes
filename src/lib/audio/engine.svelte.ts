@@ -69,12 +69,18 @@ export class AudioEngine {
 			// Pre-create ambient sources so they can buffer in the background.
 			// Music source is created on demand when a track is selected.
 			for (const layer of ambientLayers) {
+				const initial = this.ambientVolumes[layer.id];
 				const source = new AudioSource(this.#ctx, this.#masterGain, {
 					url: mediaUrl(layer.src),
 					loop: true,
-					initialVolume: this.ambientVolumes[layer.id]
+					initialVolume: initial
 				});
 				this.#ambient.set(layer.id, source);
+				// If the user adjusted an ambient slider above zero before any
+				// audio started, the source's initial volume is set but the
+				// element isn't playing. Kick it off here so they immediately
+				// hear it once the context comes up.
+				if (initial > 0) void source.play();
 			}
 
 			if (this.currentTrackId) {
