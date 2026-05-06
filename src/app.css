@@ -1,22 +1,27 @@
 @import 'tailwindcss';
 
 /*
- * Vibes — global styles
+ * Vibes — global styles & design tokens.
  *
- * Dark, atmospheric, minimal chrome. The page is intentionally black so the
- * looping background video reads as the primary surface; UI floats on top.
+ * The page is intentionally black so the looping background video reads as
+ * the primary surface; UI floats on top. Surface treatments use Tailwind's
+ * `gray` palette (cool, near-neutral) at low alphas so the video bleeds
+ * through. Per-element opacities are picked at the call site via `gray-100/X`
+ * utilities so the design intent is visible in the markup.
  */
+@theme {
+	--color-accent: oklch(0.85 0.15 150);
+	--color-accent-glow: oklch(0.85 0.15 150 / 0.5);
+}
+
 :root {
 	color-scheme: dark;
-	--vibes-bg: #000;
-	--vibes-fg: oklch(0.95 0 0);
-	--vibes-muted: oklch(0.65 0 0);
 }
 
 html,
 body {
-	background: var(--vibes-bg);
-	color: var(--vibes-fg);
+	background: black;
+	color: var(--color-gray-100);
 	height: 100%;
 	overscroll-behavior: none;
 }
@@ -34,7 +39,6 @@ body {
 	-webkit-font-smoothing: antialiased;
 }
 
-/* Honour reduced-motion globally. Components may opt out where needed. */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,

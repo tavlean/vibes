@@ -7,12 +7,10 @@
 	 *   2. Play / Pause (button)
 	 *   3. Scene picker (one button per scene)
 	 *   4. Ambient mixer (one slider per layer)
-	 *   5. Track list (existing TrackList — its own component)
+	 *   5. Track list (TrackList component)
 	 *
-	 * Every row uses the same styling vocabulary so the panel reads as a
-	 * single column of consistent controls. No outer container chrome —
-	 * the panel positions itself fixed-right vertically-centered, and
-	 * lets the rows speak for themselves.
+	 * Every row uses the same Tailwind vocabulary so the panel reads as a
+	 * single column of consistent controls.
 	 */
 	import { ambientLayers, scenes } from '$lib/catalog';
 	import { getEngine } from '$lib/audio/context';
@@ -21,10 +19,26 @@
 	import TrackList from './TrackList.svelte';
 
 	const engine = getEngine();
+
+	// Shared row chrome — same look across slider rows, scene buttons, the
+	// play/pause action, and tracks. Centralising it here means the visual
+	// vocabulary is one constant, not three near-duplicates.
+	const rowBase =
+		'relative flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm focus-visible:ring-2 focus-visible:ring-gray-100/40 focus-visible:outline-none';
+	const rowInteractive =
+		'cursor-pointer transition-colors duration-150 bg-gray-100/4 border-gray-100/6 hover:bg-gray-100/8 hover:border-gray-100/10';
+	const rowCurrent = 'bg-gray-100/7 border-gray-100/14 hover:bg-gray-100/7 hover:border-gray-100/14';
+
+	const headingClass =
+		'm-0 mb-1 px-1 text-[0.7rem] font-medium tracking-[0.08em] text-gray-100/55 uppercase';
+	const listClass = 'flex list-none flex-col gap-1 m-0 p-0';
 </script>
 
-<aside class="panel" aria-label="Controls">
-	<section class="section" aria-label="Playback">
+<aside
+	class="fixed top-1/2 right-8 z-10 flex max-h-[90vh] w-80 -translate-y-1/2 flex-col gap-4 overflow-y-auto max-sm:right-4 max-sm:left-4 max-sm:max-h-[80vh] max-sm:w-auto"
+	aria-label="Controls"
+>
+	<section class="flex flex-col gap-1" aria-label="Playback">
 		<SliderRow
 			label="Master"
 			value={engine.masterVolume}
@@ -32,32 +46,36 @@
 		/>
 		<button
 			type="button"
-			class="row action"
+			class={[rowBase, rowInteractive]}
 			onclick={() => void engine.toggle()}
 			aria-pressed={engine.isPlaying}
 			aria-label={engine.isPlaying ? 'Pause' : 'Play'}
 		>
-			<span class="label">{engine.isPlaying ? 'Pause' : 'Play'}</span>
-			<span class="icon" aria-hidden="true">{engine.isPlaying ? '❚❚' : '▶'}</span>
+			<span class="flex-1 truncate">{engine.isPlaying ? 'Pause' : 'Play'}</span>
+			<span class="text-xs tracking-tighter text-gray-100/70" aria-hidden="true">
+				{engine.isPlaying ? '❚❚' : '▶'}
+			</span>
 		</button>
 	</section>
 
-	<section class="section" aria-label="Scene">
-		<h3 class="heading">Scene</h3>
-		<ul class="rows">
+	<section class="flex flex-col gap-1" aria-label="Scene">
+		<h3 class={headingClass}>Scene</h3>
+		<ul class={listClass}>
 			{#each scenes as scene (scene.id)}
 				{@const isCurrent = scene.id === engine.currentSceneId}
 				<li>
 					<button
 						type="button"
-						class="row"
-						class:current={isCurrent}
+						class={[rowBase, rowInteractive, isCurrent && rowCurrent]}
 						onclick={() => engine.setScene(scene.id)}
 						aria-pressed={isCurrent}
 					>
-						<span class="label">{scene.title}</span>
+						<span class="flex-1 truncate">{scene.title}</span>
 						{#if isCurrent}
-							<span class="dot" aria-hidden="true"></span>
+							<span
+								class="size-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent-glow)]"
+								aria-hidden="true"
+							></span>
 						{/if}
 					</button>
 				</li>
@@ -65,9 +83,9 @@
 		</ul>
 	</section>
 
-	<section class="section" aria-label="Ambient">
-		<h3 class="heading">Ambient</h3>
-		<ul class="rows">
+	<section class="flex flex-col gap-1" aria-label="Ambient">
+		<h3 class={headingClass}>Ambient</h3>
+		<ul class={listClass}>
 			{#each ambientLayers as layer (layer.id)}
 				<li>
 					<SliderRow
@@ -88,107 +106,10 @@
 </aside>
 
 <style>
-	.panel {
-		position: fixed;
-		right: 2rem;
-		top: 50%;
-		transform: translateY(-50%);
-		z-index: 10;
-		width: 320px;
-		max-height: 90vh;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		overflow-y: auto;
+	/* Tailwind has no built-in scrollbar utilities, so the thin scrollbar on
+	   the panel stays here. */
+	aside {
 		scrollbar-width: thin;
-		scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
-	}
-
-	.section {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.heading {
-		font-size: 0.7rem;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		opacity: 0.55;
-		margin: 0 0 0.25rem 0;
-		padding: 0 0.25rem;
-		font-weight: 500;
-	}
-
-	.rows {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	/* Shared row styling — the same rules as SliderRow / TrackList. Buttons
-	   in this file (Play/Pause, Scene options) reuse the same vocabulary. */
-	.row {
-		position: relative;
-		width: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		padding: 0.55rem 0.75rem;
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.06);
-		color: inherit;
-		border-radius: 8px;
-		font: inherit;
-		font-size: 0.85rem;
-		text-align: left;
-		cursor: pointer;
-		transition:
-			background 150ms ease,
-			border-color 150ms ease;
-	}
-	.row:hover {
-		background: rgba(255, 255, 255, 0.08);
-		border-color: rgba(255, 255, 255, 0.1);
-	}
-	.row:focus-visible {
-		outline: none;
-		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
-	}
-	.row.current {
-		background: rgba(255, 255, 255, 0.07);
-		border-color: rgba(255, 255, 255, 0.14);
-	}
-
-	.label {
-		flex: 1;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.icon {
-		opacity: 0.7;
-		font-size: 0.78rem;
-		letter-spacing: -0.05em;
-	}
-	.dot {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: oklch(0.85 0.15 150);
-		box-shadow: 0 0 8px oklch(0.85 0.15 150 / 0.5);
-	}
-
-	@media (max-width: 640px) {
-		.panel {
-			right: 1rem;
-			left: 1rem;
-			width: auto;
-			max-height: 80vh;
-		}
+		scrollbar-color: color-mix(in oklab, var(--color-gray-100) 18%, transparent) transparent;
 	}
 </style>
