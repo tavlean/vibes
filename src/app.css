@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 /*
  * Vibes — global styles & design tokens.
@@ -10,42 +10,42 @@
  * utilities so the design intent is visible in the markup.
  */
 @theme {
-	--color-accent: oklch(0.85 0.15 150);
-	--color-accent-glow: oklch(0.85 0.15 150 / 0.5);
+    --color-accent: oklch(0.85 0.15 150);
+    --color-accent-glow: oklch(0.85 0.15 150 / 0.5);
 }
 
 :root {
-	color-scheme: dark;
+    color-scheme: dark;
 }
 
 html,
 body {
-	background: black;
-	color: var(--color-gray-100);
-	height: 100%;
-	overscroll-behavior: none;
+    background: var(--color-gray-950);
+    color: var(--color-gray-100);
+    height: 100%;
+    overscroll-behavior: none;
 }
 
 body {
-	margin: 0;
-	font-family:
-		system-ui,
-		-apple-system,
-		'Segoe UI',
-		Roboto,
-		'Helvetica Neue',
-		Arial,
-		sans-serif;
-	-webkit-font-smoothing: antialiased;
+    margin: 0;
+    font-family:
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
-		scroll-behavior: auto !important;
-	}
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
