@@ -20,6 +20,8 @@ export interface AudioSourceOptions {
 	initialVolume?: number;
 	/** Crossorigin attribute, useful when loading from R2 with CORS. */
 	crossOrigin?: 'anonymous' | 'use-credentials' | null;
+	/** Fires after the element's `ended` event (i.e. natural finish). */
+	onEnded?: () => void;
 }
 
 export class AudioSource {
@@ -33,6 +35,10 @@ export class AudioSource {
 	volume = $state(0);
 	isPlaying = $state(false);
 	isLoaded = $state(false);
+	/** Reactive playback position in seconds. Driven by media `timeupdate`. */
+	currentTime = $state(0);
+	/** Reactive duration in seconds (NaN/0 until metadata loads). */
+	duration = $state(0);
 
 	constructor(ctx: AudioContext, destination: AudioNode, options: AudioSourceOptions) {
 		this.#ctx = ctx;
@@ -65,7 +71,26 @@ export class AudioSource {
 		});
 		el.addEventListener('ended', () => {
 			if (!el.loop) this.isPlaying = false;
+			options.onEnded?.();
 		});
+		el.addEventListener('timeupdate', () => {
+			this.currentTime = el.currentTime;
+		});
+		const updateDuration = () => {
+			this.duration = Number.isFinite(el.duration) ? el.duration : 0;
+		};
+		el.addEventListener('loadedmetadata', updateDuration);
+		el.addEventListener('durationchange', updateDuration);
+	}
+
+	/**
+	 * Internal audio element. Exposed for end-to-end test probes that need
+	 * to simulate media events (e.g. dispatching 'ended' for auto-advance
+	 * verification). Not part of the public engine API — don't use this from
+	 * application code.
+	 */
+	get _element(): HTMLAudioElement {
+		return this.#element;
 	}
 
 	/** Smooth-ramp the gain to a target value to avoid clicks. */

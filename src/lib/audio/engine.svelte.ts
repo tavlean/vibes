@@ -21,8 +21,14 @@ const FADE_SECONDS = 0.05;
 export class AudioEngine {
 	#ctx: AudioContext | null = null;
 	#masterGain: GainNode | null = null;
-	#music: AudioSource | null = null;
 	#ambient = new Map<AmbientLayerId, AudioSource>();
+	/**
+	 * The currently mounted music source. Public + reactive so consumers can
+	 * read `music.currentTime` / `music.duration` inside a $effect to drive
+	 * progress UI. Reassigned on every track switch — the $state declaration
+	 * is what makes that reassignment propagate.
+	 */
+	music = $state<AudioSource | null>(null);
 
 	// ── Reactive state (UI-facing) ─────────────────────────────────────────
 	masterVolume: number = $state(defaults.masterVolume);
@@ -99,15 +105,15 @@ export class AudioEngine {
 	// ── Music ──────────────────────────────────────────────────────────────
 	async play(): Promise<void> {
 		await this.ensureRunning();
-		if (!this.#music && this.currentTrackId) this.#mountTrack(this.currentTrackId);
-		if (!this.#music) return;
-		this.#music.setVolume(1);
-		await this.#music.play();
+		if (!this.music && this.currentTrackId) this.#mountTrack(this.currentTrackId);
+		if (!this.music) return;
+		this.music.setVolume(1);
+		await this.music.play();
 		this.isPlaying = true;
 	}
 
 	pause(): void {
-		this.#music?.pause();
+		this.music?.pause();
 		this.isPlaying = false;
 	}
 
@@ -116,17 +122,36 @@ export class AudioEngine {
 		else await this.play();
 	}
 
+	/**
+	 * Switch to a different track. By design, selecting a track also starts
+	 * playing it — the user clicked a track because they want to hear it.
+	 * If they want silence, they hit Play/Pause.
+	 */
 	async setTrack(id: string): Promise<void> {
 		if (id === this.currentTrackId) return;
+		await this.ensureRunning();
 		this.currentTrackId = id;
-		const wasPlaying = this.isPlaying;
 		if (this.#ctx) {
 			this.#mountTrack(id);
-			if (wasPlaying && this.#music) {
-				this.#music.setVolume(1);
-				await this.#music.play();
+			if (this.music) {
+				this.music.setVolume(1);
+				await this.music.play();
+				this.isPlaying = true;
 			}
 		}
+	}
+
+	/**
+	 * Called when the current track's `<audio>` fires `ended`. Advances to
+	 * the next track in the catalog, wrapping back to the first after the
+	 * last. No-op if the catalog is empty.
+	 */
+	#advanceToNext(): void {
+		if (tracks.length === 0) return;
+		const idx = tracks.findIndex((t) => t.id === this.currentTrackId);
+		const nextIdx = idx < 0 ? 0 : (idx + 1) % tracks.length;
+		const next = tracks[nextIdx];
+		if (next) void this.setTrack(next.id);
 	}
 
 	#mountTrack(id: string): void {
@@ -136,14 +161,15 @@ export class AudioEngine {
 		const track = tracks.find((t) => t.id === id);
 		if (!track) return;
 
-		if (this.#music) {
-			this.#music.destroy();
-			this.#music = null;
+		if (this.music) {
+			this.music.destroy();
+			this.music = null;
 		}
-		this.#music = new AudioSource(ctx, master, {
+		this.music = new AudioSource(ctx, master, {
 			url: mediaUrl(track.src),
 			loop: false,
-			initialVolume: 1
+			initialVolume: 1,
+			onEnded: () => this.#advanceToNext()
 		});
 	}
 
@@ -172,7 +198,7 @@ export class AudioEngine {
 
 	// ── Cleanup ────────────────────────────────────────────────────────────
 	destroy(): void {
-		this.#music?.destroy();
+		this.music?.destroy();
 		for (const a of this.#ambient.values()) a.destroy();
 		this.#ambient.clear();
 		try {
@@ -185,7 +211,7 @@ export class AudioEngine {
 		});
 		this.#ctx = null;
 		this.#masterGain = null;
-		this.#music = null;
+		this.music = null;
 		this.isReady = false;
 	}
 }
