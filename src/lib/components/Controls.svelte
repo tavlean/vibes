@@ -1,113 +1,189 @@
 <script lang="ts">
 	/**
-	 * The DialKit-driven section of the panel: master volume, play/pause,
-	 * scene picker, ambient mixer.
+	 * The control panel — fully custom, no DialKit.
 	 *
-	 * Tracks are NOT here — they're rendered by `TrackList.svelte` because
-	 * the user-facing requirement (click-to-toggle button + passive elapsed-
-	 * time display, no drag affordances) doesn't fit any of DialKit's control
-	 * types.
+	 * Layout (top → bottom):
+	 *   1. Master volume (slider)
+	 *   2. Play / Pause (button)
+	 *   3. Scene picker (one button per scene)
+	 *   4. Ambient mixer (one slider per layer)
+	 *   5. Track list (existing TrackList — its own component)
 	 *
-	 * NOTE — DialKit reactivity workaround. We DO NOT use the object returned
-	 * by `createDialKit` for $effect. That proxy is a one-shot snapshot:
-	 * inside DialKit, `let values = $state(resolve())` is reassigned on every
-	 * store change (`values = resolve()`), but the consumer's reference is
-	 * still bound to the original proxy/object, so Svelte never sees property
-	 * changes through it. (Svelte's docs warn about exporting reassigned
-	 * $state — same constraint applies across function-return.)
-	 *
-	 * Workaround: subscribe to DialStore directly with `subscribe(panelId, …)`
-	 * and read with `getValue`. `subscribeGlobal` is NOT enough — it only
-	 * fires on panel register/unregister, never on value updates. We use it
-	 * to detect when the panel becomes available, then attach the per-panel
-	 * subscription.
-	 *
-	 * See docs/dialkit.md for the upgrade-check procedure.
+	 * Every row uses the same styling vocabulary so the panel reads as a
+	 * single column of consistent controls. No outer container chrome —
+	 * the panel positions itself fixed-right vertically-centered, and
+	 * lets the rows speak for themselves.
 	 */
-	import { createDialKit } from 'dialkit/svelte';
-	import { DialStore } from 'dialkit/store';
-	import { ambientLayers, defaults, scenes } from '$lib/catalog';
+	import { ambientLayers, scenes } from '$lib/catalog';
 	import { getEngine } from '$lib/audio/context';
-	import type { AmbientLayerId } from '$lib/types';
+	import SliderRow from './SliderRow.svelte';
+	import TrackList from './TrackList.svelte';
 
 	const engine = getEngine();
-	const PANEL_NAME = 'Vibes';
-
-	const sceneOptions = scenes.map((s) => ({ value: s.id, label: s.title }));
-
-	createDialKit(
-		PANEL_NAME,
-		{
-			master: [defaults.masterVolume, 0, 1] as [number, number, number],
-			play: { type: 'action' as const, label: 'Play / Pause' },
-			scene: {
-				type: 'select' as const,
-				options: sceneOptions,
-				default: defaults.sceneId
-			},
-			ambient: {
-				rain: [0, 0, 1] as [number, number, number],
-				thunder: [0, 0, 1] as [number, number, number],
-				traffic: [0, 0, 1] as [number, number, number],
-				cafe: [0, 0, 1] as [number, number, number],
-				fireplace: [0, 0, 1] as [number, number, number],
-				vinyl: [0, 0, 1] as [number, number, number]
-			}
-		},
-		{
-			onAction: async (path) => {
-				if (path === 'play') {
-					// The click that fired this callback IS a user gesture, so
-					// AudioContext can be created/resumed safely from here.
-					await engine.toggle();
-				}
-			}
-		}
-	);
-
-	function findPanelId(): string | undefined {
-		return DialStore.getPanels().find((p) => p.name === PANEL_NAME)?.id;
-	}
-
-	/** Read every DialStore value once and push into the engine. */
-	function pull(): void {
-		const id = findPanelId();
-		if (!id) return;
-
-		const m = DialStore.getValue(id, 'master');
-		if (typeof m === 'number') engine.setMasterVolume(m);
-
-		const s = DialStore.getValue(id, 'scene');
-		if (typeof s === 'string' && s !== engine.currentSceneId) {
-			engine.setScene(s);
-		}
-
-		for (const layer of ambientLayers as ReadonlyArray<{ id: AmbientLayerId }>) {
-			const v = DialStore.getValue(id, `ambient.${layer.id}`);
-			if (typeof v === 'number' && v !== engine.ambientVolumes[layer.id]) {
-				void engine.setAmbientVolume(layer.id, v);
-			}
-		}
-	}
-
-	$effect(() => {
-		let unsubPanel: (() => void) | undefined;
-
-		function tryAttach() {
-			if (unsubPanel) return;
-			const id = findPanelId();
-			if (!id) return;
-			pull();
-			unsubPanel = DialStore.subscribe(id, pull);
-		}
-
-		tryAttach();
-		queueMicrotask(tryAttach);
-		const unsubGlobal = DialStore.subscribeGlobal(tryAttach);
-
-		return () => {
-			unsubGlobal();
-			unsubPanel?.();
-		};
-	});
 </script>
+
+<aside class="panel" aria-label="Controls">
+	<section class="section" aria-label="Playback">
+		<SliderRow
+			label="Master"
+			value={engine.masterVolume}
+			onChange={(v) => engine.setMasterVolume(v)}
+		/>
+		<button
+			type="button"
+			class="row action"
+			onclick={() => void engine.toggle()}
+			aria-pressed={engine.isPlaying}
+			aria-label={engine.isPlaying ? 'Pause' : 'Play'}
+		>
+			<span class="label">{engine.isPlaying ? 'Pause' : 'Play'}</span>
+			<span class="icon" aria-hidden="true">{engine.isPlaying ? '❚❚' : '▶'}</span>
+		</button>
+	</section>
+
+	<section class="section" aria-label="Scene">
+		<h3 class="heading">Scene</h3>
+		<ul class="rows">
+			{#each scenes as scene (scene.id)}
+				{@const isCurrent = scene.id === engine.currentSceneId}
+				<li>
+					<button
+						type="button"
+						class="row"
+						class:current={isCurrent}
+						onclick={() => engine.setScene(scene.id)}
+						aria-pressed={isCurrent}
+					>
+						<span class="label">{scene.title}</span>
+						{#if isCurrent}
+							<span class="dot" aria-hidden="true"></span>
+						{/if}
+					</button>
+				</li>
+			{/each}
+		</ul>
+	</section>
+
+	<section class="section" aria-label="Ambient">
+		<h3 class="heading">Ambient</h3>
+		<ul class="rows">
+			{#each ambientLayers as layer (layer.id)}
+				<li>
+					<SliderRow
+						label={layer.title}
+						value={engine.ambientVolumes[layer.id]}
+						onChange={(v) => engine.setAmbientVolume(layer.id, v)}
+					/>
+				</li>
+			{/each}
+		</ul>
+	</section>
+
+	<TrackList />
+</aside>
+
+<style>
+	.panel {
+		position: fixed;
+		right: 2rem;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 10;
+		width: 320px;
+		max-height: 90vh;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+	}
+
+	.section {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.heading {
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.55;
+		margin: 0 0 0.25rem 0;
+		padding: 0 0.25rem;
+		font-weight: 500;
+	}
+
+	.rows {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	/* Shared row styling — the same rules as SliderRow / TrackList. Buttons
+	   in this file (Play/Pause, Scene options) reuse the same vocabulary. */
+	.row {
+		position: relative;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0.55rem 0.75rem;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(255, 255, 255, 0.06);
+		color: inherit;
+		border-radius: 8px;
+		font: inherit;
+		font-size: 0.85rem;
+		text-align: left;
+		cursor: pointer;
+		transition:
+			background 150ms ease,
+			border-color 150ms ease;
+	}
+	.row:hover {
+		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(255, 255, 255, 0.1);
+	}
+	.row:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+	}
+	.row.current {
+		background: rgba(255, 255, 255, 0.07);
+		border-color: rgba(255, 255, 255, 0.14);
+	}
+
+	.label {
+		flex: 1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.icon {
+		opacity: 0.7;
+		font-size: 0.78rem;
+		letter-spacing: -0.05em;
+	}
+	.dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: oklch(0.85 0.15 150);
+		box-shadow: 0 0 8px oklch(0.85 0.15 150 / 0.5);
+	}
+
+	@media (max-width: 640px) {
+		.panel {
+			right: 1rem;
+			left: 1rem;
+			width: auto;
+			max-height: 80vh;
+		}
+	}
+</style>
