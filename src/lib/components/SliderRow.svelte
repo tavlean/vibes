@@ -139,13 +139,6 @@
 		overflow: hidden;
 		isolation: isolate;
 		touch-action: none;
-		transition:
-			background 150ms ease,
-			border-color 150ms ease;
-	}
-	.row:hover {
-		background: rgba(255, 255, 255, 0.08);
-		border-color: rgba(255, 255, 255, 0.1);
 	}
 	.row:focus-visible {
 		outline: none;
@@ -153,8 +146,6 @@
 	}
 	.row.dragging {
 		cursor: grabbing;
-		background: rgba(255, 255, 255, 0.09);
-		border-color: rgba(255, 255, 255, 0.12);
 	}
 
 	/* Filled portion. Animates smoothly when the user clicks elsewhere on
@@ -174,11 +165,13 @@
 		transition: none;
 	}
 
-	/* Decile snap hints. Hidden at rest, fade in on hover or drag — same
-	   pattern DialKit used. Pure CSS background; no per-tick element. */
+	/* Decile snap hints — short vertical dashes centered vertically in the
+	   row (not full height; that's what makes them read as "hints" rather
+	   than as a visual change to the row itself). Hidden at rest, fade in
+	   on hover/focus/drag. */
 	.ticks {
 		position: absolute;
-		inset: 0;
+		inset: 11px 0;
 		z-index: 1;
 		pointer-events: none;
 		opacity: 0;
@@ -186,10 +179,10 @@
 			to right,
 			transparent 0,
 			transparent calc(10% - 1px),
-			rgba(255, 255, 255, 0.1) calc(10% - 1px),
-			rgba(255, 255, 255, 0.1) 10%
+			rgba(255, 255, 255, 0.22) calc(10% - 1px),
+			rgba(255, 255, 255, 0.22) 10%
 		);
-		transition: opacity 150ms ease;
+		transition: opacity 180ms ease;
 	}
 	.row:hover .ticks,
 	.row:focus-visible .ticks,
@@ -197,25 +190,33 @@
 		opacity: 1;
 	}
 
-	/* Vertical thumb line at the current value. Position math keeps the
-	   thumb fully inside the row at both extremes (left edge at value=0,
-	   right edge at value=1) — see the calc below. */
+	/* Vertical thumb line at the current value. Hidden at rest; fades in
+	   on hover/focus/drag — same affordance pattern as the ticks. Position
+	   math keeps the thumb fully inside the row at both extremes (left
+	   edge at value=0, right edge at value=1). */
 	.thumb {
 		position: absolute;
-		top: 6px;
-		bottom: 6px;
+		top: 5px;
+		bottom: 5px;
 		left: calc(1.5px + var(--fill, 0) * (100% - 3px));
 		transform: translateX(-50%);
 		width: 3px;
 		border-radius: 2px;
-		background: rgba(255, 255, 255, 0.78);
+		background: rgba(255, 255, 255, 0.85);
 		z-index: 2;
 		pointer-events: none;
-		transition: left 150ms cubic-bezier(0.2, 0, 0, 1);
+		opacity: 0;
+		transition:
+			opacity 180ms ease,
+			left 150ms cubic-bezier(0.2, 0, 0, 1);
+	}
+	.row:hover .thumb,
+	.row:focus-visible .thumb,
+	.row.dragging .thumb {
+		opacity: 1;
 	}
 	.row.dragging .thumb {
-		transition: none;
-		background: rgba(255, 255, 255, 0.95);
+		transition: opacity 180ms ease;
 	}
 
 	.label,
