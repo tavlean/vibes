@@ -11,9 +11,6 @@
 	 * current value, decile-tick hints in the background that fade in on
 	 * hover/drag (DialKit-style snap reference). Cursor is `grab` at rest,
 	 * `grabbing` while dragging.
-	 *
-	 * The selectors in this app (Scene, Tracks) are NOT sliders — they're
-	 * separate components and don't get any of this affordance.
 	 */
 	import type { Snippet } from 'svelte';
 
@@ -48,7 +45,6 @@
 		icon
 	}: Props = $props();
 
-	let trackEl: HTMLDivElement | undefined = $state();
 	let dragging = $state(false);
 
 	const fillPct = $derived.by(() => {
@@ -57,9 +53,8 @@
 		return Math.max(0, Math.min(1, (value - min) / range));
 	});
 
-	function valueFromClientX(clientX: number): number {
-		if (!trackEl) return value;
-		const rect = trackEl.getBoundingClientRect();
+	function valueFromClientX(el: HTMLElement, clientX: number): number {
+		const rect = el.getBoundingClientRect();
 		const t = (clientX - rect.left) / rect.width;
 		const clamped = Math.max(0, Math.min(1, t));
 		const v = min + clamped * (max - min);
@@ -67,20 +62,20 @@
 		return Math.max(min, Math.min(max, snapped));
 	}
 
-	function pointerDown(event: PointerEvent) {
+	function pointerDown(event: PointerEvent & { currentTarget: HTMLElement }) {
 		dragging = true;
-		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-		onChange(valueFromClientX(event.clientX));
+		event.currentTarget.setPointerCapture(event.pointerId);
+		onChange(valueFromClientX(event.currentTarget, event.clientX));
 	}
-	function pointerMove(event: PointerEvent) {
+	function pointerMove(event: PointerEvent & { currentTarget: HTMLElement }) {
 		if (!dragging) return;
-		onChange(valueFromClientX(event.clientX));
+		onChange(valueFromClientX(event.currentTarget, event.clientX));
 	}
-	function pointerUp(event: PointerEvent) {
+	function pointerUp(event: PointerEvent & { currentTarget: HTMLElement }) {
 		if (!dragging) return;
 		dragging = false;
 		try {
-			(event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+			event.currentTarget.releasePointerCapture(event.pointerId);
 		} catch {
 			// already released
 		}
@@ -100,16 +95,20 @@
 </script>
 
 <div
-	class="row"
-	class:dragging
-	bind:this={trackEl}
+	class={[
+		'row',
+		'relative flex w-full touch-none items-center justify-between gap-3 overflow-hidden rounded-lg border px-3 py-2 text-left text-sm select-none isolate',
+		'border-gray-100/6 bg-gray-100/4',
+		'focus-visible:ring-2 focus-visible:ring-gray-100/40 focus-visible:outline-none',
+		dragging ? 'cursor-grabbing dragging' : 'cursor-grab'
+	]}
 	role="slider"
 	tabindex="0"
 	aria-label={label}
 	aria-valuemin={min}
 	aria-valuemax={max}
 	aria-valuenow={value}
-	style="--fill: {fillPct}"
+	style:--fill={fillPct}
 	onpointerdown={pointerDown}
 	onpointermove={pointerMove}
 	onpointerup={pointerUp}
@@ -120,53 +119,31 @@
 	<span class="ticks" aria-hidden="true"></span>
 	<span class="thumb" aria-hidden="true"></span>
 	{#if icon}
-		<span class="icon" aria-hidden="true">{@render icon()}</span>
+		<span class="relative z-20 -mr-1 inline-flex shrink-0 items-center text-gray-100/70" aria-hidden="true">
+			{@render icon()}
+		</span>
 	{/if}
-	<span class="label">{label}</span>
-	<span class="value">{valueFormat(value, min, max)}</span>
+	<span class="relative z-20 flex-1 truncate">{label}</span>
+	<span class="relative z-20 text-xs text-gray-100/60 tabular-nums">
+		{valueFormat(value, min, max)}
+	</span>
 </div>
 
 <style>
-	.row {
-		position: relative;
-		width: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		padding: 0.55rem 0.75rem;
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.06);
-		color: inherit;
-		border-radius: 8px;
-		font: inherit;
-		font-size: 0.85rem;
-		text-align: left;
-		cursor: grab;
-		user-select: none;
-		overflow: hidden;
-		isolation: isolate;
-		touch-action: none;
-	}
-	.row:focus-visible {
-		outline: none;
-		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
-	}
-	.row.dragging {
-		cursor: grabbing;
-	}
+	/*
+	 * Slider geometry. The row chrome (background, border, padding, radius)
+	 * lives on the element above; this block is only the slider-specific
+	 * bits — fill, ticks, thumb — which can't be expressed cleanly as
+	 * Tailwind utilities because they depend on the --fill custom property.
+	 */
 
 	/* Filled portion. Animates smoothly when the user clicks elsewhere on
 	   the bar; instant during a drag so it tracks the pointer exactly. */
 	.fill {
 		position: absolute;
-		left: 0;
-		top: 0;
-		bottom: 0;
+		inset: 0 auto 0 0;
 		width: calc(var(--fill, 0) * 100%);
-		background: rgba(255, 255, 255, 0.08);
-		border-top-right-radius: 8px;
-		border-bottom-right-radius: 8px;
+		background: color-mix(in oklab, var(--color-gray-100) 8%, transparent);
 		z-index: 0;
 		pointer-events: none;
 		transition: width 150ms cubic-bezier(0.2, 0, 0, 1);
@@ -175,13 +152,16 @@
 		transition: none;
 	}
 
-	/* Decile snap hints — short vertical dashes centered vertically in the
-	   row (not full height; that's what makes them read as "hints" rather
-	   than as a visual change to the row itself). Hidden at rest, fade in
-	   on hover/focus/drag. */
+	/* Decile snap hints — a 12px-tall strip centered vertically. The
+	   repeating gradient draws a 1px line every 10% (transparent gap, then
+	   1px of colour). Hidden at rest; fade in on hover/focus/drag. */
 	.ticks {
 		position: absolute;
-		inset: 14px 0;
+		left: 0;
+		right: 0;
+		top: 50%;
+		height: 12px;
+		transform: translateY(-50%);
 		z-index: 1;
 		pointer-events: none;
 		opacity: 0;
@@ -189,32 +169,24 @@
 			to right,
 			transparent 0,
 			transparent calc(10% - 1px),
-			rgba(255, 255, 255, 0.22) calc(10% - 1px),
-			rgba(255, 255, 255, 0.22) 10%
+			color-mix(in oklab, var(--color-gray-100) 22%, transparent) calc(10% - 1px),
+			color-mix(in oklab, var(--color-gray-100) 22%, transparent) 10%
 		);
 		transition: opacity 180ms ease;
 	}
-	.row:hover .ticks,
-	.row:focus-visible .ticks,
-	.row.dragging .ticks {
-		opacity: 0.7;
-	}
 
-	/* Vertical thumb line at the current value. Hidden at rest; fades in
-	   on hover/focus/drag — same affordance pattern as the ticks.
-	   Positioned a few pixels inside the fill's right edge so the fill
-	   visibly extends past the thumb, rather than the thumb sitting on
-	   the boundary. The `max(2px, …)` keeps the thumb fully on-screen at
-	   the left edge when the value is at (or near) zero. */
+	/* Vertical thumb line. Its right edge sits 4px inside the fill's right
+	   edge; max() keeps the 4px-wide thumb fully visible at value=0 instead
+	   of clipping behind overflow:hidden. Hidden at rest; fades in with the
+	   ticks. */
 	.thumb {
 		position: absolute;
 		top: 8px;
 		bottom: 8px;
-		left: max(2px, calc(var(--fill, 0) * 100% - 6px));
-		transform: translateX(-50%);
+		left: max(0px, calc(var(--fill, 0) * 100% - 8px));
 		width: 4px;
 		border-radius: 2px;
-		background: rgba(255, 255, 255, 0.85);
+		background: color-mix(in oklab, var(--color-gray-100) 85%, transparent);
 		z-index: 2;
 		pointer-events: none;
 		opacity: 0;
@@ -222,40 +194,20 @@
 			opacity 180ms ease,
 			left 150ms cubic-bezier(0.2, 0, 0, 1);
 	}
-	.row:hover .thumb,
-	.row:focus-visible .thumb,
-	.row.dragging .thumb {
-		opacity: 1;
-	}
+	/* During drag, snap thumb position to the pointer (no position
+	   transition). The opacity transition keeps the fade-in/out smooth. */
 	.row.dragging .thumb {
 		transition: opacity 180ms ease;
 	}
 
-	.icon,
-	.label,
-	.value {
-		position: relative;
-		z-index: 3;
-	}
-	.icon {
-		display: inline-flex;
-		align-items: center;
-		flex-shrink: 0;
+	.row:hover .ticks,
+	.row:focus-visible .ticks,
+	.row.dragging .ticks {
 		opacity: 0.7;
-		/* Pull the label closer to the icon — the row's gap (0.75rem) is
-		   right between label and value, but feels too generous between
-		   an icon and its label. */
-		margin-right: calc(-0.75rem + 0.5rem);
 	}
-	.label {
-		flex: 1;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.value {
-		opacity: 0.6;
-		font-variant-numeric: tabular-nums;
-		font-size: 0.78rem;
+	.row:hover .thumb,
+	.row:focus-visible .thumb,
+	.row.dragging .thumb {
+		opacity: 1;
 	}
 </style>
