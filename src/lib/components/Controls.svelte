@@ -2,23 +2,39 @@
 	/**
 	 * The single source of truth for all controls.
 	 *
-	 * DialKit is configured here and its reactive `values` object is bridged to
-	 * the AudioEngine via $effect. We don't render any custom controls — DialKit
-	 * provides the entire panel (master volume, track picker, play/pause button,
-	 * scene picker, and a folder with one slider per ambient layer).
+	 * DialKit renders the entire panel; we declare the schema with createDialKit
+	 * and bridge values into the AudioEngine.
+	 *
+	 * NOTE — DialKit reactivity workaround. We DO NOT use the object returned
+	 * by `createDialKit` for $effect. That proxy is a one-shot snapshot:
+	 * inside DialKit, `let values = $state(resolve())` is reassigned on every
+	 * store change (`values = resolve()`), but the consumer's reference is
+	 * still bound to the original proxy/object, so Svelte never sees property
+	 * changes through it. (Svelte's docs warn about exporting reassigned
+	 * $state — same constraint applies across function-return.)
+	 *
+	 * Workaround: subscribe to DialStore directly with `subscribe(panelId, …)`
+	 * and read with `getValue`. `subscribeGlobal` is NOT enough — it only
+	 * fires on panel register/unregister, never on value updates. We use it
+	 * to detect when the panel becomes available, then attach the per-panel
+	 * subscription.
+	 *
+	 * See docs/dialkit.md for the upgrade-check procedure.
 	 */
 	import { createDialKit } from 'dialkit/svelte';
+	import { DialStore } from 'dialkit/store';
 	import { ambientLayers, defaults, scenes, tracks } from '$lib/catalog';
 	import { getEngine } from '$lib/audio/context';
 	import type { AmbientLayerId } from '$lib/types';
 
 	const engine = getEngine();
+	const PANEL_NAME = 'Vibes';
 
 	const trackOptions = tracks.map((t) => ({ value: t.id, label: t.title }));
 	const sceneOptions = scenes.map((s) => ({ value: s.id, label: s.title }));
 
-	const values = createDialKit(
-		'Vibes',
+	createDialKit(
+		PANEL_NAME,
 		{
 			master: [defaults.masterVolume, 0, 1] as [number, number, number],
 			track: {
@@ -52,32 +68,53 @@
 		}
 	);
 
-	// Bridge: push DialKit value changes into the AudioEngine. Each $effect
-	// only depends on the field it reads, so unrelated changes don't refire it.
-	$effect(() => {
-		engine.setMasterVolume(values.master);
-	});
+	function findPanelId(): string | undefined {
+		return DialStore.getPanels().find((p) => p.name === PANEL_NAME)?.id;
+	}
 
-	$effect(() => {
-		if (values.track && values.track !== engine.currentTrackId) {
-			void engine.setTrack(values.track);
+	function pull(): void {
+		const id = findPanelId();
+		if (!id) return;
+
+		const m = DialStore.getValue(id, 'master');
+		if (typeof m === 'number') engine.setMasterVolume(m);
+
+		const t = DialStore.getValue(id, 'track');
+		if (typeof t === 'string' && t !== engine.currentTrackId) {
+			void engine.setTrack(t);
 		}
-	});
 
-	$effect(() => {
-		if (values.scene && values.scene !== engine.currentSceneId) {
-			engine.setScene(values.scene);
+		const s = DialStore.getValue(id, 'scene');
+		if (typeof s === 'string' && s !== engine.currentSceneId) {
+			engine.setScene(s);
 		}
-	});
 
-	// Ambient layers — one $effect per layer keeps changes granular.
-	const ambientIds: AmbientLayerId[] = ambientLayers.map((l) => l.id);
-	$effect(() => {
-		for (const id of ambientIds) {
-			const next = values.ambient[id as keyof typeof values.ambient];
-			if (next !== engine.ambientVolumes[id]) {
-				void engine.setAmbientVolume(id, next);
+		for (const layer of ambientLayers as ReadonlyArray<{ id: AmbientLayerId }>) {
+			const v = DialStore.getValue(id, `ambient.${layer.id}`);
+			if (typeof v === 'number' && v !== engine.ambientVolumes[layer.id]) {
+				void engine.setAmbientVolume(layer.id, v);
 			}
 		}
+	}
+
+	$effect(() => {
+		let unsubPanel: (() => void) | undefined;
+
+		function tryAttach() {
+			if (unsubPanel) return;
+			const id = findPanelId();
+			if (!id) return;
+			pull();
+			unsubPanel = DialStore.subscribe(id, pull);
+		}
+
+		tryAttach();
+		queueMicrotask(tryAttach);
+		const unsubGlobal = DialStore.subscribeGlobal(tryAttach);
+
+		return () => {
+			unsubGlobal();
+			unsubPanel?.();
+		};
 	});
 </script>

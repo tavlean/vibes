@@ -51,12 +51,55 @@ In `Controls.svelte`:
 The `as const` casts on `'select'` / `'action'` aren't decorative — without
 them TS widens to `string` and DialKit's typed config rejects the shape.
 
-## Bridge to the engine
+## ⚠ Reactivity bug — check on every upgrade
 
-DialKit returns one reactive `values` object. Each `$effect` in
-`Controls.svelte` reads one field and writes the corresponding engine setter.
-Granular dependencies → unrelated changes don't refire each effect.
+The object returned from `createDialKit()` is **not reactive across the
+function boundary** in Svelte. Inside DialKit, the impl is:
 
-`onAction` callbacks fire from inside DialKit's button click handler, which
-counts as a real user gesture — safe to call `engine.toggle()` (which calls
-`ensureRunning()`) from there.
+```js
+let values = $state(resolve());
+$effect(() => {
+  ...
+  DialStore.subscribe(panelId, () => { values = resolve(); });
+});
+return values;
+```
+
+The `values = resolve()` reassignment doesn't propagate to consumers — the
+returned reference is bound to the original proxy/object. This is the same
+constraint Svelte's docs describe under "you can only export state that isn't
+directly reassigned." Verified with playwright probe: `DialStore` updates
+correctly but `values.master` never changes from the consumer's view.
+
+**Workaround:** `Controls.svelte` ignores the return value and reads from
+`DialStore` directly. Important: `subscribeGlobal()` only fires on panel
+register/unregister — value updates only call per-panel `notify(panelId)`.
+We have to use `subscribe(panelId, …)`, and find the panel id once it's
+registered (see the `tryAttach` helper in `Controls.svelte`).
+
+**To check on each DialKit upgrade:**
+
+1. `npm install dialkit@latest`
+2. Inspect `node_modules/dialkit/dist/svelte/createDialKit.svelte.js` — does
+   it still do `let values = $state(resolve())` followed by `values = resolve()`
+   inside `$effect`? If so, the bug persists.
+3. If fixed (e.g. they switch to mutating `values.x = …` instead): you can
+   delete the workaround in `Controls.svelte` and use the returned object
+   with `$effect` directly. Run the playwright probe at `/tmp/verify-dialkit.mjs`
+   (or recreate it) to confirm value updates propagate.
+
+## Control config shape ↔ engine bridge
+
+`Controls.svelte` registers the panel via `createDialKit()`, then runs one
+`$effect` that:
+
+1. Subscribes to the panel's DialStore notifications.
+2. On each notification (and on mount), `pull()` reads every field via
+   `DialStore.getValue(panelId, path)` and pushes into the engine's setters.
+
+Adding a new control means: add it to the `createDialKit` config, then read
+it inside `pull()` and route to a new engine setter.
+
+`onAction` callbacks fire synchronously from DialKit's button click handler,
+which counts as a real user gesture — safe to call `engine.toggle()`
+(which lazily resumes the AudioContext) from there.
