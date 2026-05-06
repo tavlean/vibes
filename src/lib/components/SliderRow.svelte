@@ -7,8 +7,13 @@
 	 * → continuous adjustment. Pointer is captured on pointerdown so drag
 	 * keeps tracking even after leaving the row.
 	 *
-	 * Visual: horizontal fill from the left showing current value, label on
-	 * the left, formatted value on the right.
+	 * Visual: horizontal fill from the left, a thin vertical thumb at the
+	 * current value, decile-tick hints in the background that fade in on
+	 * hover/drag (DialKit-style snap reference). Cursor is `grab` at rest,
+	 * `grabbing` while dragging.
+	 *
+	 * The selectors in this app (Scene, Tracks) are NOT sliders — they're
+	 * separate components and don't get any of this affordance.
 	 */
 	interface Props {
 		label: string;
@@ -91,6 +96,7 @@
 
 <div
 	class="row"
+	class:dragging
 	bind:this={trackEl}
 	role="slider"
 	tabindex="0"
@@ -98,13 +104,16 @@
 	aria-valuemin={min}
 	aria-valuemax={max}
 	aria-valuenow={value}
+	style="--fill: {fillPct}"
 	onpointerdown={pointerDown}
 	onpointermove={pointerMove}
 	onpointerup={pointerUp}
 	onpointercancel={pointerUp}
 	{onkeydown}
 >
-	<span class="fill" style="width: {fillPct * 100}%"></span>
+	<span class="fill" aria-hidden="true"></span>
+	<span class="ticks" aria-hidden="true"></span>
+	<span class="thumb" aria-hidden="true"></span>
 	<span class="label">{label}</span>
 	<span class="value">{valueFormat(value, min, max)}</span>
 </div>
@@ -125,7 +134,7 @@
 		font: inherit;
 		font-size: 0.85rem;
 		text-align: left;
-		cursor: pointer;
+		cursor: grab;
 		user-select: none;
 		overflow: hidden;
 		isolation: isolate;
@@ -142,20 +151,77 @@
 		outline: none;
 		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
 	}
+	.row.dragging {
+		cursor: grabbing;
+		background: rgba(255, 255, 255, 0.09);
+		border-color: rgba(255, 255, 255, 0.12);
+	}
+
+	/* Filled portion. Animates smoothly when the user clicks elsewhere on
+	   the bar; instant during a drag so it tracks the pointer exactly. */
 	.fill {
 		position: absolute;
 		left: 0;
 		top: 0;
 		bottom: 0;
-		width: 0;
+		width: calc(var(--fill, 0) * 100%);
 		background: rgba(255, 255, 255, 0.08);
 		z-index: 0;
 		pointer-events: none;
+		transition: width 150ms cubic-bezier(0.2, 0, 0, 1);
 	}
+	.row.dragging .fill {
+		transition: none;
+	}
+
+	/* Decile snap hints. Hidden at rest, fade in on hover or drag — same
+	   pattern DialKit used. Pure CSS background; no per-tick element. */
+	.ticks {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		opacity: 0;
+		background-image: repeating-linear-gradient(
+			to right,
+			transparent 0,
+			transparent calc(10% - 1px),
+			rgba(255, 255, 255, 0.1) calc(10% - 1px),
+			rgba(255, 255, 255, 0.1) 10%
+		);
+		transition: opacity 150ms ease;
+	}
+	.row:hover .ticks,
+	.row:focus-visible .ticks,
+	.row.dragging .ticks {
+		opacity: 1;
+	}
+
+	/* Vertical thumb line at the current value. Position math keeps the
+	   thumb fully inside the row at both extremes (left edge at value=0,
+	   right edge at value=1) — see the calc below. */
+	.thumb {
+		position: absolute;
+		top: 6px;
+		bottom: 6px;
+		left: calc(1.5px + var(--fill, 0) * (100% - 3px));
+		transform: translateX(-50%);
+		width: 3px;
+		border-radius: 2px;
+		background: rgba(255, 255, 255, 0.78);
+		z-index: 2;
+		pointer-events: none;
+		transition: left 150ms cubic-bezier(0.2, 0, 0, 1);
+	}
+	.row.dragging .thumb {
+		transition: none;
+		background: rgba(255, 255, 255, 0.95);
+	}
+
 	.label,
 	.value {
 		position: relative;
-		z-index: 1;
+		z-index: 3;
 	}
 	.label {
 		flex: 1;
