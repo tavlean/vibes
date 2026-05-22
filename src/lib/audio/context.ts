@@ -1,12 +1,16 @@
 /**
- * Vibes — engine context
+ * Vibes — audio runtime context
  *
- * `[getEngine, setEngine]` typed pair from `createContext` (Svelte 5.40+) so
- * any descendant component can grab the AudioEngine without prop drilling and
- * without using stringly-typed context keys.
+ * The context value is set synchronously during SSR and hydration, while the
+ * browser-only AudioEngine is attached after mount. Descendants can render a
+ * stable disabled shell until `runtime.engine` exists.
  */
 
 import { createContext } from 'svelte';
 import type { AudioEngine } from './engine.svelte';
 
-export const [getEngine, setEngine] = createContext<AudioEngine>();
+export interface AudioRuntime {
+	engine: AudioEngine | null;
+}
+
+export const [getRuntime, setRuntime] = createContext<AudioRuntime>();

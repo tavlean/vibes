@@ -1,12 +1,18 @@
 <script lang="ts">
 	import VideoBackground from '$lib/components/VideoBackground.svelte';
 	import Controls from '$lib/components/Controls.svelte';
+	import { defaults, scenes } from '$lib/catalog';
 	import { SHOW_SCENES } from '$lib/config';
-	import { getEngine } from '$lib/audio/context';
+	import { getRuntime } from '$lib/audio/context';
 
-	const engine = getEngine();
+	const runtime = getRuntime();
+	const defaultScene = scenes.find((scene) => scene.id === defaults.sceneId);
+	const scene = $derived(runtime.engine?.currentScene ?? defaultScene);
 
 	function onkeydown(event: KeyboardEvent) {
+		const engine = runtime.engine;
+		if (!engine) return;
+
 		// Ignore shortcuts while typing into a form/contenteditable (we don't
 		// have any such inputs today, but this keeps Space-to-toggle from
 		// hijacking text entry if one is ever added).
@@ -27,7 +33,7 @@
 
 <!-- Scene-driven video background — hidden behind SHOW_SCENES. See docs/scenes.md. -->
 {#if SHOW_SCENES}
-	<VideoBackground scene={engine.currentScene} />
+	<VideoBackground {scene} />
 {/if}
 
 <!-- The first user interaction with any control (Play action in the panel,

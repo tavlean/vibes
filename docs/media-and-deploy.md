@@ -24,10 +24,14 @@ The Controls panel iterates `ambientLayers` directly, so no extra UI wiring.
 
 ## Adapter
 
-`@sveltejs/adapter-static` with `prerender = true` and `ssr = false` in
-`+layout.ts`. Build outputs a folder of plain HTML/JS/CSS to `build/`.
-Cloudflare Pages serves it entirely from edge cache; no Worker invocations,
-no per-request quota concerns.
+`@sveltejs/adapter-static` with `prerender = true` in `+layout.ts`. Build
+outputs a folder of plain HTML/JS/CSS to `build/`. Cloudflare Pages serves it
+entirely from edge cache; no Worker invocations, no per-request quota concerns.
+
+SSR stays enabled so the first page is prerendered as real HTML for SEO,
+sharing previews, and first paint. Browser-only audio setup is mounted after
+hydration via the audio runtime context; don't disable SSR to work around audio
+APIs.
 
 Switch to `adapter-cloudflare` only if a server route is genuinely needed —
 one-line change in `svelte.config.js`, plus a `wrangler.jsonc`.

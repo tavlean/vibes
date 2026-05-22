@@ -21,6 +21,7 @@
 		max?: number;
 		/** Snap interval. Defaults to 1% of range. */
 		step?: number;
+		disabled?: boolean;
 		onChange: (v: number) => void;
 		/** Right-side display formatter. Defaults to a 0–100% percentage. */
 		valueFormat?: (v: number, min: number, max: number) => string;
@@ -40,6 +41,7 @@
 		min = 0,
 		max = 1,
 		step = 0.01,
+		disabled = false,
 		onChange,
 		valueFormat = defaultFormat,
 		icon
@@ -63,12 +65,13 @@
 	}
 
 	function pointerDown(event: PointerEvent & { currentTarget: HTMLElement }) {
+		if (disabled) return;
 		dragging = true;
 		event.currentTarget.setPointerCapture(event.pointerId);
 		onChange(valueFromClientX(event.currentTarget, event.clientX));
 	}
 	function pointerMove(event: PointerEvent & { currentTarget: HTMLElement }) {
-		if (!dragging) return;
+		if (disabled || !dragging) return;
 		onChange(valueFromClientX(event.currentTarget, event.clientX));
 	}
 	function pointerUp(event: PointerEvent & { currentTarget: HTMLElement }) {
@@ -82,6 +85,7 @@
 	}
 
 	function onkeydown(event: KeyboardEvent) {
+		if (disabled) return;
 		const big = step * 5;
 		let v = value;
 		if (event.key === 'ArrowRight' || event.key === 'ArrowUp') v += big;
@@ -100,11 +104,13 @@
 		'relative flex w-full touch-none items-center justify-between gap-3 overflow-hidden rounded-lg border px-3 py-2 text-left text-sm select-none isolate',
 		'border-gray-100/6 bg-gray-100/4',
 		'focus-visible:ring-2 focus-visible:ring-gray-100/40 focus-visible:outline-none',
+		disabled && 'opacity-70',
 		dragging ? 'cursor-grabbing dragging' : 'cursor-grab'
 	]}
 	role="slider"
-	tabindex="0"
+	tabindex={disabled ? undefined : 0}
 	aria-label={label}
+	aria-disabled={disabled}
 	aria-valuemin={min}
 	aria-valuemax={max}
 	aria-valuenow={value}
@@ -160,7 +166,7 @@
 		left: 0;
 		right: 0;
 		top: 50%;
-		height: 12px;
+		height: 8px;
 		transform: translateY(-50%);
 		z-index: 1;
 		pointer-events: none;
@@ -168,8 +174,8 @@
 		background-image: repeating-linear-gradient(
 			to right,
 			transparent 0,
-			transparent calc(10% - 1px),
-			color-mix(in oklab, var(--color-gray-100) 22%, transparent) calc(10% - 1px),
+			transparent calc(10% - 2px),
+			color-mix(in oklab, var(--color-gray-100) 22%, transparent) calc(10% - 2px),
 			color-mix(in oklab, var(--color-gray-100) 22%, transparent) 10%
 		);
 		transition: opacity 180ms ease;

@@ -1,0 +1,22 @@
+{
+	"name": "Vibes",
+	"short_name": "Vibes",
+	"description": "Enjoy T.A.V's music with custom ambience layers for focused listening sessions.",
+	"icons": [
+		{
+			"src": "/favicon.svg",
+			"sizes": "512x512",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any maskable"
+		}
+	],
+	"theme_color": "#000000",
+	"background_color": "#000000",
+	"display": "standalone"
+}

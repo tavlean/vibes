@@ -12,12 +12,15 @@
 	 * Tracks aren't manually scrubbable — the user explicitly wanted a
 	 * passive display, not a draggable slider.
 	 */
-	import { tracks } from '$lib/catalog';
-	import { getEngine } from '$lib/audio/context';
+	import { defaults, tracks } from '$lib/catalog';
+	import { getRuntime } from '$lib/audio/context';
 
-	const engine = getEngine();
+	const runtime = getRuntime();
+	const engine = $derived(runtime.engine);
+	const currentTrackId = $derived(engine?.currentTrackId ?? defaults.trackId);
 
 	function clickTrack(id: string): void {
+		if (!engine) return;
 		if (id === engine.currentTrackId) {
 			void engine.toggle();
 		} else {
@@ -47,15 +50,16 @@
 	</h3>
 	<ul class="flex list-none flex-col gap-1 m-0 p-0">
 		{#each tracks as track (track.id)}
-			{@const isCurrent = track.id === engine.currentTrackId}
-			{@const cur = isCurrent ? (engine.music?.currentTime ?? 0) : 0}
-			{@const dur = isCurrent ? (engine.music?.duration ?? 0) : 0}
+			{@const isCurrent = track.id === currentTrackId}
+			{@const cur = isCurrent ? (engine?.music?.currentTime ?? 0) : 0}
+			{@const dur = isCurrent ? (engine?.music?.duration ?? 0) : 0}
 			{@const progress = dur > 0 ? Math.min(1, cur / dur) : 0}
-			{@const isPlaying = isCurrent && engine.isPlaying}
+			{@const isPlaying = isCurrent && (engine?.isPlaying ?? false)}
 			<li>
 				<button
 					type="button"
 					class={[rowBase, rowInteractive, isCurrent && rowCurrent]}
+					disabled={!engine}
 					onclick={() => clickTrack(track.id)}
 					aria-pressed={isPlaying}
 					aria-label={`${isPlaying ? 'Pause' : 'Play'} ${track.title}`}

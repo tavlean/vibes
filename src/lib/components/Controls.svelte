@@ -14,12 +14,15 @@
 	 */
 	import { ambientLayers, scenes } from '$lib/catalog';
 	import { SHOW_SCENES } from '$lib/config';
-	import { getEngine } from '$lib/audio/context';
+	import { defaults } from '$lib/catalog';
+	import { getRuntime } from '$lib/audio/context';
 	import SliderRow from './SliderRow.svelte';
 	import AmbientIcon from './AmbientIcon.svelte';
 	import TrackList from './TrackList.svelte';
 
-	const engine = getEngine();
+	const runtime = getRuntime();
+	const engine = $derived(runtime.engine);
+	const currentSceneId = $derived(engine?.currentSceneId ?? defaults.sceneId);
 
 	// Shared row chrome — same look across slider rows, scene buttons, the
 	// play/pause action, and tracks. Centralising it here means the visual
@@ -42,19 +45,21 @@
 	<section class="flex flex-col gap-1" aria-label="Playback">
 		<SliderRow
 			label="Master"
-			value={engine.masterVolume}
-			onChange={(v) => engine.setMasterVolume(v)}
+			value={engine?.masterVolume ?? defaults.masterVolume}
+			disabled={!engine}
+			onChange={(v) => engine?.setMasterVolume(v)}
 		/>
 		<button
 			type="button"
 			class={[rowBase, rowInteractive]}
-			onclick={() => void engine.toggle()}
-			aria-pressed={engine.isPlaying}
-			aria-label={engine.isPlaying ? 'Pause' : 'Play'}
+			disabled={!engine}
+			onclick={() => void engine?.toggle()}
+			aria-pressed={engine?.isPlaying ?? false}
+			aria-label={engine?.isPlaying ? 'Pause' : 'Play'}
 		>
-			<span class="flex-1 truncate">{engine.isPlaying ? 'Pause' : 'Play'}</span>
+			<span class="flex-1 truncate">{engine?.isPlaying ? 'Pause' : 'Play'}</span>
 			<span class="text-xs tracking-tighter text-gray-100/70" aria-hidden="true">
-				{engine.isPlaying ? '❚❚' : '▶'}
+				{engine?.isPlaying ? '❚❚' : '▶'}
 			</span>
 		</button>
 	</section>
@@ -65,12 +70,13 @@
 			<h3 class={headingClass}>Scene</h3>
 			<ul class={listClass}>
 				{#each scenes as scene (scene.id)}
-					{@const isCurrent = scene.id === engine.currentSceneId}
+					{@const isCurrent = scene.id === currentSceneId}
 					<li>
 						<button
 							type="button"
 							class={[rowBase, rowInteractive, isCurrent && rowCurrent]}
-							onclick={() => engine.setScene(scene.id)}
+							disabled={!engine}
+							onclick={() => engine?.setScene(scene.id)}
 							aria-pressed={isCurrent}
 						>
 							<span class="flex-1 truncate">{scene.title}</span>
@@ -94,8 +100,9 @@
 				<li>
 					<SliderRow
 						label={layer.title}
-						value={engine.ambientVolumes[layer.id]}
-						onChange={(v) => engine.setAmbientVolume(layer.id, v)}
+						value={engine?.ambientVolumes[layer.id] ?? defaults.ambientVolumes[layer.id]}
+						disabled={!engine}
+						onChange={(v) => engine?.setAmbientVolume(layer.id, v)}
 					>
 						{#snippet icon()}
 							<AmbientIcon name={layer.id} />
