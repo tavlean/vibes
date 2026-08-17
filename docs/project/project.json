@@ -1,0 +1,17 @@
+{
+  "name": "Vibes",
+  "slug": "vibes",
+  "team": "Tavlean",
+  "client": null,
+  "aliases": [
+    "Vibes"
+  ],
+  "purpose": "",
+  "status": "started",
+  "linear": {
+    "project_id": "5ec9561c-4b56-4b37-8477-afcf642257f4",
+    "url": "https://linear.app/artusion/project/vibes-a60db2b763f6"
+  },
+  "github": "tavlean/vibes",
+  "updated": "2026-08-17"
+}
