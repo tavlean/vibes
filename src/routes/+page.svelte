@@ -1,9 +1,9 @@
 <script lang="ts">
-	import VideoBackground from '$lib/components/VideoBackground.svelte';
-	import Controls from '$lib/components/Controls.svelte';
-	import { defaults, scenes } from '$lib/catalog';
-	import { SHOW_SCENES } from '$lib/config';
-	import { getRuntime } from '$lib/audio/context';
+	import VideoBackground from '#lib/components/VideoBackground.svelte';
+	import Controls from '#lib/components/Controls.svelte';
+	import { defaults, scenes } from '#lib/catalog.ts';
+	import { SHOW_SCENES } from '#lib/config.ts';
+	import { getRuntime } from '#lib/audio/context.ts';
 
 	const runtime = getRuntime();
 	const defaultScene = scenes.find((scene) => scene.id === defaults.sceneId);

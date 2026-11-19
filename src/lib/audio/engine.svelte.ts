@@ -11,9 +11,9 @@
  * components should call from a click/tap/keypress handler.
  */
 
-import type { AmbientLayerId, Track, Scene } from '$lib/types';
-import { ambientLayers, defaults, scenes, tracks } from '$lib/catalog';
-import { mediaUrl } from '$lib/media';
+import type { AmbientLayerId, Track, Scene } from '#lib/types.ts';
+import { ambientLayers, defaults, scenes, tracks } from '#lib/catalog.ts';
+import { mediaUrl } from '#lib/media.ts';
 import { AudioSource } from './source.svelte';
 
 const FADE_SECONDS = 0.05;

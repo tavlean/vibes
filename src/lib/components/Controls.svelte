@@ -12,10 +12,10 @@
 	 * Every row uses the same Tailwind vocabulary so the panel reads as a
 	 * single column of consistent controls.
 	 */
-	import { ambientLayers, scenes } from '$lib/catalog';
-	import { SHOW_SCENES } from '$lib/config';
-	import { defaults } from '$lib/catalog';
-	import { getRuntime } from '$lib/audio/context';
+	import { ambientLayers, scenes } from '#lib/catalog.ts';
+	import { SHOW_SCENES } from '#lib/config.ts';
+	import { defaults } from '#lib/catalog.ts';
+	import { getRuntime } from '#lib/audio/context.ts';
 	import SliderRow from './SliderRow.svelte';
 	import AmbientIcon from './AmbientIcon.svelte';
 	import TrackList from './TrackList.svelte';

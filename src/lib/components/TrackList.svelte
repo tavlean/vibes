@@ -12,8 +12,8 @@
 	 * Tracks aren't manually scrubbable — the user explicitly wanted a
 	 * passive display, not a draggable slider.
 	 */
-	import { defaults, tracks } from '$lib/catalog';
-	import { getRuntime } from '$lib/audio/context';
+	import { defaults, tracks } from '#lib/catalog.ts';
+	import { getRuntime } from '#lib/audio/context.ts';
 
 	const runtime = getRuntime();
 	const engine = $derived(runtime.engine);

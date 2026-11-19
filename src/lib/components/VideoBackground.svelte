@@ -7,8 +7,8 @@
 	 * co-exist for a clean crossfade.
 	 */
 	import { fade } from 'svelte/transition';
-	import type { Scene } from '$lib/types';
-	import { mediaUrl } from '$lib/media';
+	import type { Scene } from '#lib/types.ts';
+	import { mediaUrl } from '#lib/media.ts';
 
 	let { scene }: { scene: Scene | undefined } = $props();
 

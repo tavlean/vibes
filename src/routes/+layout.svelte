@@ -2,7 +2,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { asset } from '$app/paths';
-	import { setRuntime, type AudioRuntime } from '$lib/audio/context';
+	import { setRuntime, type AudioRuntime } from '#lib/audio/context.ts';
 
 	let { children } = $props();
 
@@ -18,7 +18,7 @@
 	onMount(() => {
 		let destroyed = false;
 
-		void import('$lib/audio/engine.svelte').then(({ AudioEngine }) => {
+		void import('#lib/audio/engine.svelte.ts').then(({ AudioEngine }) => {
 			if (destroyed) return;
 			runtime.engine = new AudioEngine();
 		});
@@ -41,9 +41,9 @@
 	<meta name="theme-color" content="#000000" />
 	<meta name="color-scheme" content="dark" />
 
-	<link rel="icon" href={asset('/favicon.svg')} type="image/svg+xml" />
-	<link rel="apple-touch-icon" href={asset('/apple-touch-icon.png')} sizes="180x180" />
-	<link rel="manifest" href={asset('/site.webmanifest')} />
+	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
+	<link rel="apple-touch-icon" href={asset('apple-touch-icon.png')} sizes="180x180" />
+	<link rel="manifest" href={asset('site.webmanifest')} />
 
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={siteUrl} />

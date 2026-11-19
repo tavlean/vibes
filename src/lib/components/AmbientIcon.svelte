@@ -6,7 +6,7 @@
 	 * crisply at the same display size. Fills are `currentColor` so the icon
 	 * picks up the surrounding text colour automatically.
 	 */
-	import type { AmbientLayerId } from '$lib/types';
+	import type { AmbientLayerId } from '#lib/types.ts';
 
 	interface Props {
 		name: AmbientLayerId;
