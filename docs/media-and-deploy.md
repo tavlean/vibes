@@ -38,7 +38,7 @@ one-line change in `svelte.config.js`, plus a `wrangler.jsonc`.
 
 ## Build output sanity check
 
-After `npm run build`, `build/` should contain:
+After `pnpm run build`, `build/` should contain:
 
 - `index.html` (the prerendered shell)
 - `404.html` (SPA fallback)

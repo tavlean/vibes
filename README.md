@@ -3,8 +3,8 @@
 Looping video + your beats + mixable ambient layers. Personal focus app.
 
 ```sh
-npm install
-npm run dev    # localhost:5173
+pnpm install
+pnpm run dev    # localhost:5173
 ```
 
 - **Picking up the code** → [`docs/`](./docs/)

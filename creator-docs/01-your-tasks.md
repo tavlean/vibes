@@ -15,8 +15,8 @@ step.
 Open a terminal in this folder and run:
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Then visit <http://localhost:5173> in your browser. You'll see:
@@ -174,7 +174,7 @@ To rename or replace videos, just edit the `scenes` array in
 Run the dev server again:
 
 ```sh
-npm run dev
+pnpm run dev
 ```
 
 Walk through each of:
@@ -210,6 +210,6 @@ run when you have time.
   unlocks audio (clicking Play, a track, dragging a slider — all count).
   After that, everything Just Works for the session. This is a browser
   rule, not something we can skip.
-- **Build to test the production version locally.** Run `npm run build` and
-  then `npm run preview`. The output is a folder of plain static files in
+- **Build to test the production version locally.** Run `pnpm run build` and
+  then `pnpm run preview`. The output is a folder of plain static files in
   `build/`.

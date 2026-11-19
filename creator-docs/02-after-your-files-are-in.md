@@ -36,7 +36,7 @@ I'll handle this for you when you ask — it just needs your `gh` auth.
 2. Pick the `vibes` repo.
 3. Build settings:
    - **Framework preset:** SvelteKit (static)
-   - **Build command:** `npm run build`
+   - **Build command:** `pnpm run build`
    - **Build output directory:** `build`
    - **Node version:** 20+ (set in dashboard environment variables as
      `NODE_VERSION = 20` if needed)
@@ -67,7 +67,7 @@ want to move them to R2 so:
 
 ```sh
 # Install Wrangler if you haven't (one-time, global):
-npm install -g wrangler
+pnpm add -g wrangler
 
 # Log in (opens browser):
 wrangler login
