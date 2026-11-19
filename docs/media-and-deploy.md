@@ -34,7 +34,7 @@ hydration via the audio runtime context; don't disable SSR to work around audio
 APIs.
 
 Switch to `adapter-cloudflare` only if a server route is genuinely needed —
-one-line change in `svelte.config.js`, plus a `wrangler.jsonc`.
+one-line change in the `sveltekit()` options in `vite.config.ts`, plus a `wrangler.jsonc`.
 
 ## Build output sanity check
 
